@@ -20,8 +20,8 @@ copies of base image data in the kernel's buffer cache.
 
 ## Usage
 ```
-usage: tardelta [-h] [--compressor COMMAND] [--encoding ENCODING]
-                [--format FORMAT] [-v]
+usage: tardelta [-h] [--deletelist FILE] [--compressor COMMAND]
+                [--encoding ENCODING] [--format FORMAT] [-v]
                 BASE DERIV DELTA
 
   tardelta
@@ -34,6 +34,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  --deletelist FILE     write deleted file list to FILE
   --compressor COMMAND  use the specified command for compression via stdio
   --encoding ENCODING   tar file encoding (default is UTF-8)
   --format FORMAT       tar format: gnu, pax, or ustar (default is pax)

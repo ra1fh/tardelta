@@ -30,7 +30,7 @@ DIGEST_EXCLUDE = frozenset([
     'ctime',
 ])
 
-def delta(base_tarfile, deriv_tarfile, delta_tarfile, scratch_db=None):
+def delta(base_tarfile, deriv_tarfile, delta_tarfile, delete_out=None, scratch_db=None):
     """create a delta tar file from base and derived tar files
 
     :param base_tarfile: base input tar file
@@ -45,6 +45,7 @@ def delta(base_tarfile, deriv_tarfile, delta_tarfile, scratch_db=None):
 
     if scratch_db is None:
         scratch_db = {}
+    deriv_db = {}
 
     logging.info("digesting base entries...")
     base_count = 0
@@ -58,6 +59,7 @@ def delta(base_tarfile, deriv_tarfile, delta_tarfile, scratch_db=None):
     delta_count = 0
     for tarinfo in deriv_tarfile:
         deriv_count += 1
+        deriv_db[tarinfo.name] = True
         base_digest = scratch_db.get(tarinfo.name)
         if base_digest is not None and base_digest == _digest_tarinfo(tarinfo):
             continue
@@ -78,6 +80,12 @@ def delta(base_tarfile, deriv_tarfile, delta_tarfile, scratch_db=None):
     logging.info(
         "number of delta entries: {} ({:.0f}% of derived entries)".format(
         delta_count, 100.0 * delta_count/deriv_count))
+
+    if delete_out is not None:
+        for tarinfo in base_tarfile:
+            if not deriv_db.get(tarinfo.name):
+                logging.info("deleted: {}".format(tarinfo.name))
+                delete_out.write("{}\0".format(tarinfo.name))
 
 
 def _encode_str(s):
@@ -149,6 +157,12 @@ def main():
         help="delta output tar file",
     )
     parser.add_argument(
+        '--deletelist',
+        action='store',
+        metavar="FILE",
+        help="write deleted file list to FILE",
+    )
+    parser.add_argument(
         '--compressor',
         action='store',
         metavar="COMMAND",
@@ -201,6 +215,10 @@ def main():
         compressor_pipe = compressor_proc.stdin
         output_mode = 'w'
 
+    delete_out = None
+    if args.delete:
+        delete_out = open(args.delete, 'wt')
+
     delta(
         tarfile.open(
             args.base_tarfile,
@@ -219,7 +237,11 @@ def main():
             format=tar_format,
             encoding=args.encoding
         ),
+        delete_out,
     )
+
+    if delete_out is not None:
+        delete_out.close()
 
     if compressor_proc is not None:
         # Close stdin first, so the compressor reaches EOF and exits.
