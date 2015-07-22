@@ -216,8 +216,8 @@ def main():
         output_mode = 'w'
 
     delete_out = None
-    if args.delete:
-        delete_out = open(args.delete, 'wt')
+    if args.deletelist:
+        delete_out = open(args.deletelist, 'wt')
 
     delta(
         tarfile.open(
